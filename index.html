@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ElectiGuide AI - India Election Assistant | Vote Smart</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Poppins', sans-serif; }
+    .view-transition { animation: fadeIn 0.3s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .chat-message { animation: slideIn 0.2s ease-out; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+    .chat-scroll::-webkit-scrollbar { width: 6px; }
+    .chat-scroll::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px; }
+    .chat-scroll::-webkit-scrollbar-thumb { background: #ff9933; border-radius: 10px; }
+    .candidate-card { transition: all 0.3s ease; }
+    .candidate-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.15); }
+    .step-item { position: relative; flex: 1; text-align: center; }
+    .step-circle { width: 40px; height: 40px; background: white; border: 2px solid #cbd5e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; position: relative; z-index: 2; }
+    .saffron-bg { background: linear-gradient(135deg, #ff9933 0%, #ff7700 100%); }
+    .green-bg { background: linear-gradient(135deg, #138808 0%, #0a5a05 100%); }
+    .blue-bg { background: linear-gradient(135deg, #1a237e 0%, #0d1b5e 100%); }
+    @media (max-width: 768px) { .nav-text { display: none; } .nav-icon { margin-right: 0 !important; } }
+    .loading { display: flex; justify-content: center; align-items: center; min-height: 60vh; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-orange-50 to-green-50 min-h-screen">
+
+  <!-- Navigation Bar -->
+  <nav class="bg-white shadow-lg sticky top-0 z-50 border-b-4 border-orange-500">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex justify-between items-center py-3">
+        <div class="flex items-center space-x-2">
+          <div class="flex space-x-1">
+            <div class="w-3 h-8 bg-orange-500 rounded-sm"></div>
+            <div class="w-3 h-8 bg-white rounded-sm"></div>
+            <div class="w-3 h-8 bg-green-500 rounded-sm"></div>
+          </div>
+          <span class="font-bold text-xl text-gray-800">ElectiGuide AI <span class="text-orange-500 text-sm">India</span></span>
+        </div>
+        <div class="flex space-x-2 overflow-x-auto">
+          <button data-nav="dashboard" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-orange-50 transition"><i class="fas fa-home nav-icon"></i><span class="nav-text ml-1">Home</span></button>
+          <button data-nav="candidates" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-orange-50 transition"><i class="fas fa-users nav-icon"></i><span class="nav-text ml-1">Candidates</span></button>
+          <button data-nav="process" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-orange-50 transition"><i class="fas fa-book-open nav-icon"></i><span class="nav-text ml-1">Voter Guide</span></button>
+          <button data-nav="issues" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-orange-50 transition"><i class="fas fa-exclamation-triangle nav-icon"></i><span class="nav-text ml-1">Issues</span></button>
+          <button data-nav="crowd" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-orange-50 transition"><i class="fas fa-users nav-icon"></i><span class="nav-text ml-1">Crowd Guide</span></button>
+          <button data-nav="chatbot" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-orange-50 transition"><i class="fas fa-robot nav-icon"></i><span class="nav-text ml-1">Ask AI</span></button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main id="app-root" class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Content will be rendered here -->
+  </main>
+
+  <script>
+    // ==================== APPLICATION STATE ====================
+    let currentView = 'dashboard';
+    let userData = {
+      state: '',
+      district: '',
+      constituency: '',
+      voterIdStatus: null
+    };
+    
+    // Load saved data
+    try {
+      const saved = localStorage.getItem('electiguide_india_user');
+      if (saved) userData = JSON.parse(saved);
+    } catch(e) {}
+    
+    // ==================== INDIAN CANDIDATE DATA ====================
+    const candidates = [
+      {
+        name: "Priya Sharma",
+        party: "Bharat Vikas Party",
+        symbol: "🌞",
+        color: "saffron",
+        promises: {
+          economy: "Double farmer income by 2028, ₹1 lakh crore MSME fund, reduce GST on essentials",
+          infrastructure: "200 new highways, 5 new metro cities, 24/7 electricity for all villages",
+          education: "National Education Policy implementation, 500 new colleges, digital classrooms",
+          healthcare: "Ayushman Bharat expansion to all seniors, 50% more medical colleges",
+          employment: "10 million jobs in manufacturing, startup India 2.0 with ₹50,000 crore fund",
+          women: "Women reservation bill implementation, free sanitary pads, strict anti-harassment laws"
+        },
+        experience: "Former Chief Minister (5 years) | MP (8 years)",
+        slogan: "Vikas Hai Zaroori (Development is Essential)",
+        criminalRecords: "None",
+        assets: "₹12 Crore (declared)",
+        education: "MBA, IIM Ahmedabad"
+      },
+      {
+        name: "Rajesh Kumar",
+        party: "Janata Alliance",
+        symbol: "🤝",
+        color: "green",
+        promises: {
+          economy: "Free ration for BPL families, loan waiver for farmers, minimum income support",
+          infrastructure: "Affordable housing for all by 2030, village road connectivity, clean drinking water",
+          education: "Right to Education up to graduation, hostel facilities for Dalit/OBC students",
+          healthcare: "Free treatment in private hospitals for poor, mental health helpline",
+          employment: "Guaranteed 200 days work under MGNREGA, skill development centers",
+          women: "Women safety fund, 50% reservation in local bodies, free education for girls"
+        },
+        experience: "MLA (12 years) | Minister (4 years)",
+        slogan: "Sabka Saath, Sabka Vikas (Together with All, Development for All)",
+        criminalRecords: "1 case (protest related, pending)",
+        assets: "₹3.5 Crore (declared)",
+        education: "BA, LLB - Delhi University"
+      },
+      {
+        name: "Dr. Anand Deshmukh",
+        party: "Lok Shakti",
+        symbol: "⚡",
+        color: "blue",
+        promises: {
+          economy: "Universal Basic Income pilot, wealth tax on ultra-rich, simplify tax code",
+          infrastructure: "Smart cities mission, electric vehicle charging network, waste-to-energy plants",
+          education: "Reduce syllabus by 40%, focus on critical thinking, no board exams till 10th",
+          healthcare: "Decriminalize doctors, AI-based diagnosis in villages, mental health in schools",
+          employment: "4-day work week, universal pension, gig worker protections",
+          women: "One-stop crisis centers, fast-track courts for crimes against women"
+        },
+        experience: "Political Scientist (20 years) | First-time Candidate",
+        slogan: "Naya Soch, Naya Bharat (New Thinking, New India)",
+        criminalRecords: "None",
+        assets: "₹8 Crore (declared)",
+        education: "PhD (Political Science), LSE"
+      }
+    ];
+    
+    // ==================== VOTER ISSUES ====================
+    const voterIssues = [
+      {
+        title: "Voter ID (EPIC) Problems",
+        icon: "🆔",
+        problems: ["Name misspelled or wrong photo", "Name missing from voter list", "Lost EPIC card"],
+        solutions: ["Visit booth level officer (BLO) with address proof", "Apply online at voters.eci.gov.in", "Call 1950 Voter Helpline"]
+      },
+      {
+        title: "Polling Station Issues",
+        icon: "🏛️",
+        problems: ["Station too far from home", "Long queues (2-3 hours wait)", "Lack of facilities"],
+        solutions: ["Check assigned booth on ECI website", "Use crowd guide for less busy times", "Request home voting for seniors/disabled"]
+      },
+      {
+        title: "Criminal Background Concerns",
+        icon: "⚖️",
+        problems: ["Candidates with criminal cases contesting", "Hard to find clean history candidates"],
+        solutions: ["Check affidavits on ECI website", "Vote for candidates with clean record", "Support NOTA option"]
+      },
+      {
+        title: "Women & Elderly Voter Challenges",
+        icon: "👵",
+        problems: ["Harassment at polling booths", "No separate queues", "Lack of wheelchair accessibility"],
+        solutions: ["Women-only polling booths available", "Home voting for 80+ and disabled", "Call helpline for assistance"]
+      }
+    ];
+    
+    // ==================== VOTING STEPS ====================
+    const votingSteps = [
+      { step: 1, title: "Check Your Name", desc: "Verify your name is on the voter list at voters.eci.gov.in", icon: "✅" },
+      { step: 2, title: "Find Your Polling Booth", desc: "Check assigned polling station location (7 AM - 6 PM)", icon: "📍" },
+      { step: 3, title: "Carry Valid ID", desc: "EPIC card, Aadhaar, Passport, Driving License, or PAN Card", icon: "🆔" },
+      { step: 4, title: "Vote on EVM", desc: "Press the button next to your chosen candidate's symbol", icon: "🗳️" },
+      { step: 5, title: "Get Inked", desc: "Index finger marked with indelible ink", icon: "🖐️" }
+    ];
+    
+    // ==================== CROWD DATA ====================
+    let crowdData = {
+      "Mumbai_South": { waitTime: 25, reports: 156, trend: "busy", bestTime: "2 PM - 4 PM" },
+      "Delhi_NW": { waitTime: 12, reports: 89, trend: "moderate", bestTime: "11 AM - 1 PM" },
+      "Bangalore_Central": { waitTime: 35, reports: 234, trend: "very busy", bestTime: "8 AM - 9 AM" },
+      "default": { waitTime: 20, reports: 500, trend: "moderate", bestTime: "Afternoon" }
+    };
+    
+    try {
+      const savedCrowd = localStorage.getItem('electiguide_crowd');
+      if (savedCrowd) Object.assign(crowdData, JSON.parse(savedCrowd));
+    } catch(e) {}
+    
+    function getCrowdStatus(location) {
+      return crowdData[location] || crowdData.default;
+    }
+    
+    function reportWaitTime(location, minutes) {
+      const current = getCrowdStatus(location);
+      const newReports = current.reports + 1;
+      const newAvg = Math.floor(((current.waitTime * current.reports) + minutes) / newReports);
+      let trend = newAvg < 10 ? "quiet" : newAvg < 20 ? "moderate" : newAvg < 30 ? "busy" : "very busy";
+      crowdData[location] = { ...current, waitTime: newAvg, reports: newReports, trend: trend };
+      localStorage.setItem('electiguide_crowd', JSON.stringify(crowdData));
+      return crowdData[location];
+    }
+    
+    // ==================== CHATBOT (Simple Mode - No API needed) ====================
+    let chatHistory = [
+      { role: "assistant", content: "नमस्ते! 🇮🇳 I'm your Indian Election Assistant. Ask me about voter registration, candidate backgrounds, election issues, or any voting-related question!" }
+    ];
+    
+    function getSimpleResponse(question) {
+      const q = question.toLowerCase();
+      if (q.includes('register') || q.includes('voter id') || q.includes('epic')) {
+        return "To get your Voter ID: 1) Visit voters.eci.gov.in, 2) Fill Form 6 online, 3) Upload photo & address proof, 4) Submit. You'll get EPIC card in 2-3 weeks. Call 1950 for help!";
+      } else if (q.includes('criminal') || q.includes('background')) {
+        return "Check candidate criminal records at affidavit.eci.gov.in. All candidates must declare criminal cases. Look for 'Criminal Cases' column. Vote for candidates with clean record or use NOTA!";
+      } else if (q.includes('queue') || q.includes('wait') || q.includes('long')) {
+        return "To avoid long queues: 1) Vote after 2 PM (mornings are busiest), 2) Check our Crowd Guide, 3) Use early voting if available, 4) Senior citizens can request home voting!";
+      } else if (q.includes('nota')) {
+        return "NOTA (None of The Above) is an option on EVMs. It lets you reject all candidates. While NOTA votes are counted, they don't affect election outcome - but send a strong message!";
+      } else if (q.includes('how to vote')) {
+        return "Simple steps: 1) Find your name on voter list, 2) Go to assigned polling booth, 3) Show ID, 4) Press button on EVM, 5) Get ink mark on finger. Done!";
+      } else {
+        return "Great question! I can help with: 📝 Voter registration, 🔍 Candidate backgrounds, ⏰ Voting process, 🚶 Crowd updates, ⚖️ Criminal records, 🗳️ NOTA option. What would you like to know?";
+      }
+    }
+    
+    // ==================== RENDER FUNCTIONS ====================
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    function renderDashboard() {
+      const stats = getCrowdStatus("default");
+      return `
+        <div class="space-y-6">
+          <div class="saffron-bg rounded-2xl p-6 text-white">
+            <h1 class="text-3xl font-bold mb-2">🗳️ ElectiGuide AI <span class="text-yellow-200">India</span></h1>
+            <p class="text-orange-100">Your nonpartisan companion for Indian elections - know your candidates, understand issues, vote smart!</p>
+          </div>
+          
+          <div class="bg-white rounded-xl shadow-md p-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center"><i class="fas fa-map-marker-alt text-orange-600 mr-2"></i>Your Voter Profile</h2>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div><label class="block text-sm font-medium mb-1">State</label><input type="text" id="user-state" class="w-full p-2 border rounded-lg" placeholder="e.g., Maharashtra" value="${userData.state || ''}"></div>
+              <div><label class="block text-sm font-medium mb-1">District</label><input type="text" id="user-district" class="w-full p-2 border rounded-lg" placeholder="e.g., Mumbai" value="${userData.district || ''}"></div>
+              <div><label class="block text-sm font-medium mb-1">Constituency</label><input type="text" id="user-constituency" class="w-full p-2 border rounded-lg" placeholder="e.g., Mumbai South" value="${userData.constituency || ''}"></div>
+              <div><label class="block text-sm font-medium mb-1">Voter ID Status</label><select id="user-status" class="w-full p-2 border rounded-lg"><option value="">Select</option><option value="have" ${userData.voterIdStatus === 'have' ? 'selected' : ''}>✅ Have Voter ID</option><option value="applied" ${userData.voterIdStatus === 'applied' ? 'selected' : ''}>📝 Applied</option><option value="need" ${userData.voterIdStatus === 'need' ? 'selected' : ''}>❌ Need to Apply</option></select></div>
+            </div>
+            <button id="save-profile" class="mt-4 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition">Save Profile</button>
+          </div>
+          
+          <div class="grid md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-xl shadow-md p-4 text-center"><i class="fas fa-users text-3xl text-orange-600 mb-2"></i><p class="text-2xl font-bold">${candidates.length}</p><p class="text-gray-600">Candidates</p></div>
+            <div class="bg-white rounded-xl shadow-md p-4 text-center"><i class="fas fa-clock text-3xl text-orange-600 mb-2"></i><p class="text-2xl font-bold">${stats.waitTime}</p><p class="text-gray-600">Avg Wait (min)</p></div>
+            <div class="bg-white rounded-xl shadow-md p-4 text-center"><i class="fas fa-phone-alt text-3xl text-orange-600 mb-2"></i><p class="text-lg font-bold">1950</p><p class="text-gray-600">ECI Helpline</p></div>
+          </div>
+          
+          <div class="grid md:grid-cols-2 gap-4">
+            <button data-nav="process" class="bg-white rounded-xl shadow-md p-6 text-left hover:shadow-lg transition border-l-4 border-orange-500"><i class="fas fa-book-open text-2xl text-green-600 mb-2"></i><h3 class="font-bold text-lg">How to Vote in India</h3><p class="text-gray-600 text-sm">5 simple steps to cast your vote</p></button>
+            <button data-nav="issues" class="bg-white rounded-xl shadow-md p-6 text-left hover:shadow-lg transition border-l-4 border-green-500"><i class="fas fa-exclamation-triangle text-2xl text-orange-600 mb-2"></i><h3 class="font-bold text-lg">Common Voter Issues</h3><p class="text-gray-600 text-sm">Solutions for problems faced by Indian voters</p></button>
+          </div>
+        </div>
+      `;
+    }
+    
+    function renderCandidates(selectedIssue = "economy") {
+      const issues = ["economy", "infrastructure", "education", "healthcare", "employment", "women"];
+      const issueLabels = { economy: "💰 Economy", infrastructure: "🏗️ Infrastructure", education: "📚 Education", healthcare: "🏥 Healthcare", employment: "💼 Jobs", women: "👩 Women Safety" };
+      
+      return `
+        <div class="space-y-6">
+          <h2 class="text-2xl font-bold flex items-center"><i class="fas fa-users mr-2 text-orange-600"></i>Candidate Comparison - India Elections</h2>
+          <p class="text-gray-600">Neutral, factual information. Check criminal records, assets, and promises before voting.</p>
+          
+          <div class="flex flex-wrap gap-2 border-b pb-4">
+            ${issues.map(issue => `<button data-topic="${issue}" class="topic-btn px-4 py-2 rounded-lg ${selectedIssue === issue ? 'bg-orange-600 text-white' : 'bg-white border'}">${issueLabels[issue]}</button>`).join('')}
+          </div>
+          
+          <div class="grid md:grid-cols-3 gap-6">
+            ${candidates.map(c => `
+              <div class="candidate-card bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="${c.color === 'saffron' ? 'bg-orange-600' : c.color === 'green' ? 'bg-green-600' : 'bg-blue-600'} p-4 text-white text-center">
+                  <div class="text-5xl mb-2">${c.symbol}</div>
+                  <h3 class="font-bold text-xl">${c.name}</h3>
+                  <p class="text-sm opacity-90">${c.party}</p>
+                  <p class="text-xs mt-1 italic">"${c.slogan}"</p>
+                </div>
+                <div class="p-4">
+                  <div class="mb-2"><p class="text-xs text-gray-500">Experience</p><p class="text-sm font-medium">${c.experience}</p></div>
+                  <div class="mb-2"><p class="text-xs text-gray-500">Education</p><p class="text-sm">${c.education}</p></div>
+                  <div class="mb-2"><p class="text-xs text-gray-500">Criminal Records</p><p class="text-sm ${c.criminalRecords !== 'None' ? 'text-red-600 font-semibold' : 'text-green-600'}">${c.criminalRecords}</p></div>
+                  <div class="mb-2"><p class="text-xs text-gray-500">Declared Assets</p><p class="text-sm">${c.assets}</p></div>
+                  <div class="mt-3 pt-3 border-t"><p class="text-xs font-semibold text-orange-600">On ${issueLabels[selectedIssue]}:</p><p class="text-xs text-gray-700 mt-1">${c.promises[selectedIssue]}</p></div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          
+          <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded"><p class="text-sm"><i class="fas fa-gavel mr-2"></i>Remember: Criminal records and assets are self-declared in affidavits. Always verify through ECI's official website.</p></div>
+        </div>
+      `;
+    }
+    
+    function renderProcess() {
+      return `
+        <div class="space-y-6">
+          <h2 class="text-2xl font-bold"><i class="fas fa-book-open mr-2 text-orange-600"></i>How to Vote in India - Step by Step</h2>
+          <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex flex-wrap md:flex-nowrap justify-between mb-8">
+              ${votingSteps.map(s => `<div class="step-item text-center flex-1"><div class="step-circle mx-auto mb-2">${s.icon}</div><p class="font-semibold text-xs">${s.title}</p></div>`).join('')}
+            </div>
+            ${votingSteps.map(s => `<div class="mb-4 p-4 bg-gray-50 rounded-lg"><div class="flex"><div class="bg-orange-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">${s.step}</div><div><h3 class="font-bold">${s.title}</h3><p class="text-gray-600 text-sm">${s.desc}</p></div></div></div>`).join('')}
+          </div>
+          <div class="green-bg rounded-xl p-6 text-white"><h3 class="font-bold mb-2"><i class="fas fa-phone-alt mr-2"></i>Need Help?</h3><p>Call Voter Helpline: <span class="text-xl font-bold">1950</span> | Visit: <span class="underline">voters.eci.gov.in</span></p></div>
+        </div>
+      `;
+    }
+    
+    function renderIssues() {
+      return `
+        <div class="space-y-6">
+          <h2 class="text-2xl font-bold"><i class="fas fa-exclamation-triangle mr-2 text-orange-600"></i>Common Voter Issues & Solutions</h2>
+          <div class="grid md:grid-cols-2 gap-6">
+            ${voterIssues.map(issue => `
+              <div class="bg-white rounded-xl shadow-md p-5">
+                <div class="flex items-center mb-3"><div class="text-3xl mr-3">${issue.icon}</div><h3 class="font-bold text-lg">${issue.title}</h3></div>
+                <div class="mb-3"><p class="text-sm font-semibold text-red-600">Problems:</p><ul class="list-disc list-inside text-sm text-gray-600">${issue.problems.map(p => `<li>${p}</li>`).join('')}</ul></div>
+                <div><p class="text-sm font-semibold text-green-600">Solutions:</p><ul class="list-disc list-inside text-sm text-gray-600">${issue.solutions.map(s => `<li>${s}</li>`).join('')}</ul></div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    function renderCrowd() {
+      const loc = userData.constituency || "default";
+      const crowd = getCrowdStatus(loc);
+      const trends = { quiet: "🟢 Quiet", moderate: "🟡 Moderate", busy: "🟠 Busy", "very busy": "🔴 Very Busy" };
+      
+      return `
+        <div class="space-y-6 max-w-2xl mx-auto">
+          <h2 class="text-2xl font-bold"><i class="fas fa-users mr-2 text-orange-600"></i>Polling Booth Crowd Guide</h2>
+          <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+            <div class="mb-4"><i class="fas fa-map-marker-alt text-orange-600 text-3xl"></i><p class="text-gray-600 mt-1">Area: ${userData.constituency || "Not set - add in Dashboard"}</p></div>
+            <div class="mb-4"><div class="text-6xl font-bold mb-2" id="crowd-wait">${crowd.waitTime}</div><p class="text-gray-600">minutes estimated wait time</p><span class="inline-block px-3 py-1 rounded-full text-sm mt-2 ${crowd.trend === 'quiet' ? 'bg-green-100 text-green-800' : crowd.trend === 'busy' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800'}">${trends[crowd.trend]}</span></div>
+            <div class="text-sm text-gray-500 mb-4">Best time to vote: <strong>${crowd.bestTime}</strong><br>Based on ${crowd.reports} community reports</div>
+            <div class="bg-gray-50 p-4 rounded-lg mb-4"><label class="block text-sm font-medium mb-2">Report your wait time:</label><div class="flex gap-2"><input type="number" id="wait-time-input" placeholder="Minutes waited" class="flex-1 p-2 border rounded-lg" min="1" max="180"><button id="submit-wait" class="bg-orange-600 text-white px-6 py-2 rounded-lg">Report</button></div></div>
+            <button data-nav="dashboard" class="w-full border border-gray-300 py-2 rounded-lg">Back</button>
+          </div>
+        </div>
+      `;
+    }
+    
+    function renderChatbot() {
+      return `
+        <div class="space-y-4 max-w-4xl mx-auto">
+          <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="saffron-bg p-4 text-white"><h2 class="text-xl font-bold"><i class="fas fa-robot mr-2"></i>Election Assistant AI</h2><p class="text-sm opacity-90">Ask about candidates, voter issues, registration, or any election question</p></div>
+            <div id="chat-messages" class="h-96 overflow-y-auto p-4 space-y-3 chat-scroll">
+              ${chatHistory.map(msg => `<div class="chat-message flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}"><div class="max-w-[80%] ${msg.role === 'user' ? 'bg-orange-600 text-white' : 'bg-gray-100'} rounded-lg p-3">${msg.role === 'user' ? '<i class="fas fa-user mr-2"></i>' : '<i class="fas fa-robot mr-2"></i>'}${escapeHtml(msg.content)}</div></div>`).join('')}
+            </div>
+            <div class="border-t p-4 bg-gray-50">
+              <div class="flex gap-2"><input type="text" id="chat-input" placeholder="Ask in English or Hinglish... e.g., 'How to check my name in voter list?'" class="flex-1 p-3 border rounded-lg"><button id="chat-send" class="bg-orange-600 text-white px-6 rounded-lg"><i class="fas fa-paper-plane"></i></button></div>
+              <div class="flex flex-wrap gap-2 mt-3">
+                <button class="suggest-btn text-xs bg-gray-200 px-3 py-1 rounded-full">How to get Voter ID?</button>
+                <button class="suggest-btn text-xs bg-gray-200 px-3 py-1 rounded-full">Candidates with criminal records?</button>
+                <button class="suggest-btn text-xs bg-gray-200 px-3 py-1 rounded-full">How to avoid long queues?</button>
+                <button class="suggest-btn text-xs bg-gray-200 px-3 py-1 rounded-full">What is NOTA?</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    // ==================== MAIN RENDER FUNCTION ====================
+    function render() {
+      const root = document.getElementById('app-root');
+      if (!root) return;
+      
+      let html = '';
+      switch(currentView) {
+        case 'dashboard': html = renderDashboard(); break;
+        case 'candidates': html = renderCandidates(); break;
+        case 'process': html = renderProcess(); break;
+        case 'issues': html = renderIssues(); break;
+        case 'crowd': html = renderCrowd(); break;
+        case 'chatbot': html = renderChatbot(); break;
+        default: html = renderDashboard();
+      }
+      
+      root.innerHTML = `<div class="view-transition">${html}</div>`;
+      attachEventListeners();
+    }
+    
+    // ==================== EVENT HANDLERS ====================
+    function attachEventListeners() {
+      // Navigation buttons
+      document.querySelectorAll('[data-nav]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentView = btn.getAttribute('data-nav');
+          render();
+        });
+      });
+      
+      // Save profile
+      const saveBtn = document.getElementById('save-profile');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+          userData.state = document.getElementById('user-state')?.value || '';
+          userData.district = document.getElementById('user-district')?.value || '';
+          userData.constituency = document.getElementById('user-constituency')?.value || '';
+          userData.voterIdStatus = document.getElementById('user-status')?.value || '';
+          localStorage.setItem('electiguide_india_user', JSON.stringify(userData));
+          alert('✅ Profile saved successfully!');
+        });
+      }
+      
+      // Topic buttons for candidates
+      document.querySelectorAll('.topic-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const topic = btn.getAttribute('data-topic');
+          const newHtml = renderCandidates(topic);
+          document.getElementById('app-root').innerHTML = `<div class="view-transition">${newHtml}</div>`;
+          attachEventListeners();
+        });
+      });
+      
+      // Crowd report
+      const submitWait = document.getElementById('submit-wait');
+      if (submitWait) {
+        submitWait.addEventListener('click', () => {
+          const minutes = parseInt(document.getElementById('wait-time-input')?.value);
+          if (minutes && minutes > 0 && minutes < 180) {
+            const loc = userData.constituency || "default";
+            const updated = reportWaitTime(loc, minutes);
+            const waitSpan = document.getElementById('crowd-wait');
+            if (waitSpan) waitSpan.innerText = updated.waitTime;
+            alert(`धन्यवाद! New average wait: ${updated.waitTime} minutes`);
+          } else {
+            alert('Please enter a valid wait time (1-180 minutes)');
+          }
+        });
+      }
+      
+      // Chatbot
+      let isProcessing = false;
+      async function sendMessage() {
+        if (isProcessing) return;
+        const input = document.getElementById('chat-input');
+        const question = input?.value.trim();
+        if (!question) return;
+        
+        isProcessing = true;
+        const messagesDiv = document.getElementById('chat-messages');
+        const sendBtn = document.getElementById('chat-send');
+        if (sendBtn) sendBtn.disabled = true;
+        
+        // Add user message
+        chatHistory.push({ role: "user", content: question });
+        messagesDiv?.insertAdjacentHTML('beforeend', `<div class="chat-message flex justify-end"><div class="max-w-[80%] bg-orange-600 text-white rounded-lg p-3"><i class="fas fa-user mr-2"></i>${escapeHtml(question)}</div></div>`);
+        input.value = '';
+        
+        // Add typing indicator
+        messagesDiv?.insertAdjacentHTML('beforeend', `<div id="typing-indicator" class="chat-message flex justify-start"><div class="bg-gray-100 rounded-lg p-3"><i class="fas fa-robot mr-2"></i>🤔 Thinking...</div></div>`);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        
+        // Get response
+        const answer = getSimpleResponse(question);
+        
+        // Remove typing indicator
+        document.getElementById('typing-indicator')?.remove();
+        
+        // Add AI response
+        chatHistory.push({ role: "assistant", content: answer });
+        messagesDiv?.insertAdjacentHTML('beforeend', `<div class="chat-message flex justify-start"><div class="max-w-[80%] bg-gray-100 rounded-lg p-3"><i class="fas fa-robot mr-2"></i>${escapeHtml(answer)}</div></div>`);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        
+        if (sendBtn) sendBtn.disabled = false;
+        isProcessing = false;
+      }
+      
+      const sendBtn = document.getElementById('chat-send');
+      const chatInput = document.getElementById('chat-input');
+      if (sendBtn) sendBtn.addEventListener('click', sendMessage);
+      if (chatInput) chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+      
+      document.querySelectorAll('.suggest-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const input = document.getElementById('chat-input');
+          if (input) { input.value = btn.innerText; sendMessage(); }
+        });
+      });
+    }
+    
+    // Initialize - call render directly
+    render();
+  </script>
+</body>
+</html>
